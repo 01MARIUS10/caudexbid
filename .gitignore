@@ -1,0 +1,21 @@
+# --- Documentation & fichiers personnels ---
+BDD/
+
+
+# --- Secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Dépendances / build (en plus de Laravel/.gitignore) ---
+Laravel/vendor/
+Laravel/node_modules/
+Laravel/public/build/
+Laravel/.phpunit.result.cache
+
+# --- Système / IDE ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log

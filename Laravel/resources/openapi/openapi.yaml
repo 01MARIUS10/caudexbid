@@ -1,0 +1,1221 @@
+openapi: 3.0.3
+info:
+  title: caudexbid API
+  version: 1.0.0
+  description: |
+    API de la plateforme d'enchères **caudexbid**.
+
+    ## Authentification
+    Laravel Sanctum, jeton **Bearer**.
+    1. `POST /auth/login` → récupérez `token` (dans cette page, il est appliqué automatiquement au bouton **Authorize**).
+    2. Les routes protégées attendent l'en-tête `Authorization: Bearer {token}`.
+
+    ## Grades
+    | Code | Grade | Droits principaux |
+    | --- | --- | --- |
+    | `G` | Général | consultation |
+    | `M` | Régulier | enchérir, acheter |
+    | `P` | Premium | enchérir, acheter, changer le grade de ses filleuls |
+    | `A` | Administrateur | tout |
+
+    Les routes réservées à certains grades l'indiquent dans leur description (**Grades : …**).
+
+    ## Erreurs
+    - `401` : jeton absent ou invalide.
+    - `403` : grade insuffisant ou règle métier « interdit » (`{"message": "..."}`).
+    - `404` : ressource introuvable (`{"message": "..."}`).
+    - `422` : entrées invalides (`{"message", "errors"}`) ou règle métier non respectée (`{"message"}`).
+
+    ## Dates
+    Les dates `*_le` sont en ISO 8601 (UTC). Les champs `*_kst` sont formatés `Y-m-d H:i` en heure coréenne (Asia/Seoul).
+servers:
+  - url: /api
+    description: Serveur courant
+
+tags:
+  - name: Général
+  - name: Auth
+    description: Inscription, connexion, session
+  - name: Profil
+    description: Informations personnelles et préférences du membre connecté
+  - name: Grades
+    description: Grades et changement de grade
+  - name: Produits
+    description: Lots mis aux enchères
+  - name: Sessions d'enchères
+  - name: Enchères
+  - name: Achat immédiat
+  - name: Médias
+    description: Photos (4 max) et vidéo (1) d'un lot
+  - name: Propriétaires
+  - name: Documents
+    description: Documents imprimables (A4 paysage) par session
+  - name: Messages
+
+security:
+  - bearerAuth: []
+
+paths:
+  /:
+    get:
+      tags: [Général]
+      summary: Point d'entrée de l'API
+      security: []
+      responses:
+        '200':
+          description: Liens utiles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application: { type: string, example: caudexbid API }
+                  auth: { type: string, format: uri }
+                  back_office: { type: string, format: uri }
+
+  /home:
+    get:
+      tags: [Général]
+      summary: Écran initial (non connecté)
+      description: Grille de 20 photos max, sans information sur la plante.
+      security: []
+      responses:
+        '200':
+          description: Contenu de l'écran d'accueil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  photos:
+                    type: array
+                    items: { type: string, format: uri }
+                  liens:
+                    type: object
+                    properties:
+                      politique_de_fonctionnement: { type: string, format: uri }
+                      informations_exploitant:
+                        type: object
+                        properties:
+                          site: { type: string, example: www.caudexbid.com }
+                          email: { type: string, format: email, example: contact@caudexbid.com }
+
+  # ───────────────────────────── Auth ─────────────────────────────
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Inscription
+      description: Crée un membre de grade Général (`G`). Le parrain doit exister.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Membre créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Connexion
+      description: 'Retourne un jeton Sanctum à utiliser en `Authorization: Bearer {token}`.'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identifiant, password]
+              properties:
+                identifiant: { type: string, maxLength: 50, example: admin }
+                password: { type: string, format: password, example: password }
+                device_name: { type: string, maxLength: 100, default: web, example: swagger }
+      responses:
+        '200':
+          description: Connecté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string, example: '1|aBcDeF...' }
+                  user: { $ref: '#/components/schemas/User' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Déconnexion
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                all_devices:
+                  type: boolean
+                  default: false
+                  description: Révoque aussi les jetons des autres appareils.
+      responses:
+        '204': { description: Déconnecté }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Membre connecté
+      description: En-tête après connexion (identifiant + grade), avec profil et préférences.
+      responses:
+        '200':
+          description: Membre connecté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ───────────────────────────── Profil ─────────────────────────────
+  /me/profil:
+    get:
+      tags: [Profil]
+      summary: Mes informations personnelles
+      responses:
+        '200':
+          description: Profil
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [Profil]
+      summary: Modifier mes informations personnelles
+      description: Seuls les champs envoyés sont modifiés. Le parrain n'est pas modifiable ici.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nom: { type: string, maxLength: 100, nullable: true }
+                telephone: { type: string, maxLength: 30 }
+                adresse: { type: string, maxLength: 1000 }
+                pays: { type: string, maxLength: 100, nullable: true }
+                nationalite: { $ref: '#/components/schemas/Nationality' }
+      responses:
+        '200':
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserProfile' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /me/preferences:
+    get:
+      tags: [Profil]
+      summary: Mes préférences
+      responses:
+        '200':
+          description: Préférences
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserPreference' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [Profil]
+      summary: Modifier mes préférences
+      description: Seuls les champs envoyés sont modifiés.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fuseau_horaire: { type: string, example: Asia/Seoul }
+                notif_surenchere: { type: boolean }
+                notif_adjudication: { type: boolean }
+                notif_nouveau_message: { type: boolean }
+                notif_prochaine_session: { type: boolean }
+      responses:
+        '200':
+          description: Préférences mises à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserPreference' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Grades ─────────────────────────────
+  /grades:
+    get:
+      tags: [Grades]
+      summary: Liste des grades
+      responses:
+        '200':
+          description: Grades
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Grade' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /grade-changes/candidates:
+    get:
+      tags: [Grades]
+      summary: Membres dont je peux changer le grade
+      description: |
+        **Grades : P, A.**
+        - Premium : membres qui lui ont adressé une demande + ses filleuls (G, M).
+        - Admin : tous les membres.
+      responses:
+        '200':
+          description: Membres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /users/{user}/grade:
+    post:
+      tags: [Grades]
+      summary: Changer le grade d'un membre
+      description: |
+        **Grades : P, A.**
+        Règle métier : le passage M → G est interdit si le membre a une adjudication non soldée.
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [grade_code]
+              properties:
+                grade_code: { $ref: '#/components/schemas/GradeCode' }
+      responses:
+        '201':
+          description: Nouveau grade enregistré
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/UserGrade' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /users/{user}/grades:
+    get:
+      tags: [Grades]
+      summary: Historique des grades d'un membre
+      description: '**Grades : P, A.**'
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: Historique
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserGrade' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ───────────────────────────── Produits ─────────────────────────────
+  /products:
+    get:
+      tags: [Produits]
+      summary: Enchères de la session
+      description: Lots d'une session (par défaut la session en cours). Un lot vendu non soldé est renvoyé au format `ProductSold`.
+      parameters:
+        - name: session_id
+          in: query
+          required: false
+          description: Session à afficher (défaut = session en cours).
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Lots
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      oneOf:
+                        - $ref: '#/components/schemas/ProductCard'
+                        - $ref: '#/components/schemas/ProductSold'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Produits]
+      summary: Créer un lot
+      description: '**Grade : A.**'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateProductRequest' }
+      responses:
+        '201':
+          description: Lot créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ProductDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /products/unsettled:
+    get:
+      tags: [Produits]
+      summary: Enchères non soldées
+      description: |
+        Lots adjugés ou achetés pas encore réglés.
+        M : les siens · P : les siens + ceux de ses filleuls · A : tous.
+      responses:
+        '200':
+          description: Lots non soldés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProductSold' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /products/{product}:
+    get:
+      tags: [Produits]
+      summary: Détail d'un lot
+      description: Écran de détail et écran d'enchère.
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Lot
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    oneOf:
+                      - $ref: '#/components/schemas/ProductDetail'
+                      - $ref: '#/components/schemas/ProductSold'
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /products/{product}/settle:
+    post:
+      tags: [Produits]
+      summary: Règlement terminé
+      description: '**Grade : A.** Supprime le produit et ses enchères.'
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '204': { description: Lot soldé et supprimé }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/BusinessError' }
+
+  # ───────────────────────────── Sessions ─────────────────────────────
+  /auction-sessions/ticker:
+    get:
+      tags: [Sessions d'enchères]
+      summary: Bandeau défilant
+      description: Date de clôture, temps restant et date de la prochaine enchère.
+      responses:
+        '200':
+          description: Bandeau
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cloture_le_kst: { type: string, nullable: true, example: '2026-11-14 21:00' }
+                  temps_restant_secondes: { type: integer, nullable: true, example: 86400 }
+                  prochaine_enchere_kst: { type: string, nullable: true, example: '2026-11-21 21:00' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /auction-sessions:
+    get:
+      tags: [Sessions d'enchères]
+      summary: Liste des sessions
+      description: '**Grade : A.**'
+      responses:
+        '200':
+          description: Sessions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/AuctionSession' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Sessions d'enchères]
+      summary: Créer une session
+      description: |
+        **Grade : A.**
+        Dates saisies en heure coréenne (KST). Durée imposée : 3 à 5 jours.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [debut_le, cloture_le]
+              properties:
+                titre: { type: string, maxLength: 100, nullable: true, example: Session de novembre }
+                debut_le: { type: string, example: '2026-11-20 21:00', description: Heure KST }
+                cloture_le: { type: string, example: '2026-11-24 21:00', description: "Heure KST, après debut_le" }
+      responses:
+        '201':
+          description: Session créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AuctionSession' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Enchères ─────────────────────────────
+  /products/{product}/bids:
+    post:
+      tags: [Enchères]
+      summary: Enchérir
+      description: |
+        **Grades : M, P.**
+        Le montant doit être ≥ à la prochaine enchère minimale et respecter le pas.
+        Avec `proxy: true`, un plafond est enregistré et des enchères automatiques sont placées jusqu'à ce plafond.
+        Une enchère dans les 5 dernières minutes prolonge la clôture de 5 minutes (6 fois max).
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [montant]
+              properties:
+                montant: { type: number, format: double, minimum: 0, exclusiveMinimum: true, example: 150.00 }
+                proxy: { type: boolean, default: false }
+                plafond:
+                  type: number
+                  format: double
+                  nullable: true
+                  description: Obligatoire si `proxy` est vrai ; ≥ montant.
+                  example: 300.00
+      responses:
+        '201':
+          description: Enchère enregistrée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enchere:
+                    allOf: [{ $ref: '#/components/schemas/Bid' }]
+                    type: object
+                    nullable: true
+                  est_meilleur_encherisseur: { type: boolean }
+                  prolongation: { type: boolean }
+                  produit: { $ref: '#/components/schemas/ProductDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    get:
+      tags: [Enchères]
+      summary: Historique des enchères d'un lot
+      description: '**Grade : A.**'
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Enchères
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Bid' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ───────────────────────────── Achat immédiat ─────────────────────────────
+  /products/{product}/achat:
+    put:
+      tags: [Achat immédiat]
+      summary: Définir le prix d'achat immédiat
+      description: '**Grade : A.**'
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [prix]
+              properties:
+                prix: { type: number, format: double, minimum: 0, exclusiveMinimum: true, example: 500.00 }
+      responses:
+        '200':
+          description: Prix défini
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Achat' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /products/{product}/achat/confirm:
+    post:
+      tags: [Achat immédiat]
+      summary: Acheter immédiatement
+      description: '**Grades : M, P.** Après confirmation, le lot passe en SOLD.'
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [confirmation]
+              properties:
+                confirmation: { type: boolean, enum: [true], example: true }
+      responses:
+        '200':
+          description: Lot acheté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ProductSold' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Médias ─────────────────────────────
+  /products/{product}/media:
+    post:
+      tags: [Médias]
+      summary: Ajouter une photo ou une vidéo
+      description: |
+        **Grade : A.**
+        - Photo : `position` 1 à 4, `vue` obligatoire, image jpg/jpeg/png/webp ≤ 10 Mo.
+        - Vidéo : `duree_secondes` 1 à 20 obligatoire, `vue` interdite, mp4/mov/webm ≤ 50 Mo.
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [type, fichier]
+              properties:
+                type: { $ref: '#/components/schemas/MediaType' }
+                fichier: { type: string, format: binary }
+                position: { type: integer, minimum: 1, maximum: 4, description: Obligatoire pour une photo }
+                vue: { $ref: '#/components/schemas/PhotoView' }
+                duree_secondes: { type: integer, minimum: 1, maximum: 20, description: Obligatoire pour une vidéo }
+                est_vitrine: { type: boolean, description: Photo affichée sur l'écran d'accueil }
+      responses:
+        '201':
+          description: Média ajouté
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Media' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /product-media/{media}:
+    delete:
+      tags: [Médias]
+      summary: Supprimer un média
+      description: '**Grade : A.**'
+      parameters:
+        - name: media
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '204': { description: Média supprimé }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────────── Propriétaires ─────────────────────────────
+  /product-owners:
+    get:
+      tags: [Propriétaires]
+      summary: Liste des propriétaires
+      description: '**Grade : A.**'
+      responses:
+        '200':
+          description: Propriétaires
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/ProductOwner' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Propriétaires]
+      summary: Créer un propriétaire
+      description: '**Grade : A.**'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nom]
+              properties:
+                nom: { type: string, maxLength: 150 }
+                pays: { type: string, maxLength: 100, nullable: true, default: Madagascar }
+                email: { type: string, format: email, maxLength: 150, nullable: true }
+                infos_bancaires: { type: string, maxLength: 2000, nullable: true }
+      responses:
+        '201':
+          description: Propriétaire créé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/ProductOwner' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ───────────────────────────── Documents ─────────────────────────────
+  /documents/{numero}:
+    get:
+      tags: [Documents]
+      summary: Document imprimable d'une session
+      description: |
+        | n° | Document | G | M | P | A |
+        | --- | --- | --- | --- | --- | --- |
+        | 1 | Liste des lots | oui | oui | oui | oui |
+        | 2 | Résultat des adjudications | – | ses données | filleuls | tout |
+        | 3 | Enchères en cours | – | ses données | filleuls | tout |
+        | 4 | Répartition | – | – | filleuls | tout |
+        | 5 | Adjudications par premium | – | – | filleuls | tout |
+      parameters:
+        - name: numero
+          in: path
+          required: true
+          schema: { type: integer, enum: [1, 2, 3, 4, 5] }
+        - name: session_id
+          in: query
+          required: false
+          description: Défaut = session en cours.
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document: { type: integer, example: 1 }
+                  titre: { type: string, example: Liste des lots par session }
+                  session:
+                    type: object
+                    properties:
+                      id: { type: integer }
+                      titre: { type: string, nullable: true }
+                  format: { type: string, example: A4 paysage }
+                  lignes:
+                    type: array
+                    description: Les colonnes dépendent du document.
+                    items: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ───────────────────────────── Messages ─────────────────────────────
+  /messages/inbox:
+    get:
+      tags: [Messages]
+      summary: Messages reçus
+      responses:
+        '200':
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /messages/outbox:
+    get:
+      tags: [Messages]
+      summary: Messages envoyés
+      responses:
+        '200':
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /messages/premiums:
+    get:
+      tags: [Messages]
+      summary: Membres premium
+      description: Destinataires possibles d'une demande de statut de membre régulier.
+      responses:
+        '200':
+          description: Membres premium
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /messages:
+    post:
+      tags: [Messages]
+      summary: Envoyer un message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [destinataire_id, memo]
+              properties:
+                destinataire_id: { type: integer, description: Différent de l'expéditeur }
+                type: { $ref: '#/components/schemas/MessageType' }
+                memo: { type: string, maxLength: 5000 }
+      responses:
+        '201':
+          description: Message envoyé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  /messages/{message}/read:
+    patch:
+      tags: [Messages]
+      summary: Marquer un message comme lu
+      description: Seul le destinataire peut marquer le message comme lu.
+      parameters:
+        - name: message
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Message lu
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Jeton Sanctum obtenu via `POST /auth/login`.
+
+  parameters:
+    ProductId:
+      name: product
+      in: path
+      required: true
+      schema: { type: integer }
+    UserId:
+      name: user
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    Unauthenticated:
+      description: Non authentifié
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Unauthenticated. }
+    Forbidden:
+      description: Action non autorisée
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Action non autorisée pour votre grade. }
+    NotFound:
+      description: Introuvable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Produit introuvable. }
+    BusinessError:
+      description: Règle métier non respectée
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Entrées invalides ou règle métier non respectée
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      properties:
+        message: { type: string, example: The montant field is required. }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+
+    # Enums
+    GradeCode:
+      type: string
+      enum: [G, M, P, A]
+      description: G = Général, M = Régulier, P = Premium, A = Administrateur
+    Nationality:
+      type: string
+      enum: [china, japan, korea, madagascar, other]
+    MessageType:
+      type: string
+      enum: [general, regular_member_request, registration]
+      default: general
+    ProductStatus:
+      type: string
+      enum: [draft, active, sold, awarded, unsold]
+    AuctionSessionStatus:
+      type: string
+      enum: [scheduled, open, closed, settled]
+    MediaType:
+      type: string
+      enum: [photo, video]
+    PhotoView:
+      type: string
+      enum: [front, side, back]
+    BidSource:
+      type: string
+      enum: [manual, proxy]
+
+    # Utilisateurs
+    RegisterRequest:
+      type: object
+      required: [identifiant, email, password, password_confirmation, telephone, adresse, nationalite, parrain_identifiant]
+      properties:
+        identifiant: { type: string, minLength: 3, maxLength: 50, pattern: '^[A-Za-z0-9_-]+$', example: jdupont }
+        email: { type: string, format: email, maxLength: 150 }
+        password: { type: string, format: password, minLength: 8 }
+        password_confirmation: { type: string, format: password }
+        nom: { type: string, maxLength: 100, nullable: true }
+        telephone: { type: string, maxLength: 30 }
+        adresse: { type: string, maxLength: 1000 }
+        pays: { type: string, maxLength: 100, nullable: true }
+        nationalite: { $ref: '#/components/schemas/Nationality' }
+        parrain_identifiant: { type: string, description: Identifiant d'un membre existant, example: admin }
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        identifiant: { type: string }
+        email: { type: string, format: email }
+        en_tete: { type: string, description: Identifiant + code du grade }
+        grade: { $ref: '#/components/schemas/Grade' }
+        derniere_connexion_le: { type: string, format: date-time, nullable: true }
+        inscrit_le: { type: string, format: date-time }
+        profil: { $ref: '#/components/schemas/UserProfile' }
+        preferences: { $ref: '#/components/schemas/UserPreference' }
+    UserProfile:
+      type: object
+      properties:
+        nom: { type: string, nullable: true }
+        telephone: { type: string, nullable: true }
+        adresse: { type: string, nullable: true }
+        pays: { type: string, nullable: true }
+        nationalite:
+          allOf: [{ $ref: '#/components/schemas/Nationality' }]
+          type: string
+          nullable: true
+        parrain: { type: string, nullable: true, description: Identifiant du parrain }
+    UserPreference:
+      type: object
+      properties:
+        fuseau_horaire: { type: string, nullable: true }
+        notif_surenchere: { type: boolean }
+        notif_adjudication: { type: boolean }
+        notif_nouveau_message: { type: boolean }
+        notif_prochaine_session: { type: boolean }
+    Grade:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { $ref: '#/components/schemas/GradeCode' }
+        nom: { type: string }
+        niveau: { type: integer }
+        peut_encherir: { type: boolean }
+        peut_changer_grade: { type: boolean }
+    UserGrade:
+      type: object
+      properties:
+        id: { type: integer }
+        user_id: { type: integer }
+        grade: { $ref: '#/components/schemas/Grade' }
+        edited_by: { type: string, nullable: true, description: Identifiant de l'auteur du changement }
+        created_at: { type: string, format: date-time }
+
+    # Produits
+    CreateProductRequest:
+      type: object
+      required: [session_enchere_id, proprietaire_id, numero_lot, nom, prix_depart, pas_enchere]
+      properties:
+        session_enchere_id: { type: integer }
+        proprietaire_id: { type: integer }
+        categorie: { type: string, maxLength: 50, nullable: true }
+        numero_lot: { type: string, maxLength: 20, description: Unique, example: L-001 }
+        nom: { type: string, maxLength: 150 }
+        description_1: { type: string, nullable: true, description: Taille affichée sur la carte }
+        description_2: { type: string, nullable: true }
+        description_3: { type: string, nullable: true }
+        taille_diametre: { type: number, minimum: 0, nullable: true }
+        taille_circonference: { type: number, minimum: 0, nullable: true }
+        taille_hauteur: { type: number, minimum: 0, nullable: true }
+        prix_vente_existant: { type: number, minimum: 0, nullable: true }
+        prix_depart: { type: number, minimum: 0 }
+        pas_enchere: { type: number, minimum: 0, exclusiveMinimum: true }
+        prix_achat_immediat: { type: number, nullable: true, description: Supérieur à prix_depart }
+        publier: { type: boolean, default: true }
+    PriceFields:
+      type: object
+      description: |
+        Prix, prochaine enchère, nombre d'enchérisseurs et achat immédiat ne sont publiés que dans les 48 h
+        précédant la clôture (toujours visibles pour l'administrateur). Les champs absents ne sont pas renvoyés.
+      properties:
+        prix_visible: { type: boolean }
+        prix_actuel: { type: string, example: '150.00' }
+        prochaine_enchere_minimale: { type: string, example: '160.00' }
+        nb_encherisseurs: { type: integer }
+        prix_achat_immediat: { type: string, example: '500.00' }
+    TimingFields:
+      type: object
+      properties:
+        cloture_le: { type: string, format: date-time }
+        cloture_le_kst: { type: string, example: '2026-11-14 21:00' }
+        temps_restant_secondes: { type: integer }
+        nb_prolongations: { type: integer, maximum: 6 }
+    ProductCard:
+      allOf:
+        - type: object
+          properties:
+            id: { type: integer }
+            numero_lot: { type: string }
+            nom: { type: string }
+            taille: { type: string, nullable: true }
+            photo_1: { type: string, format: uri, nullable: true }
+            statut: { $ref: '#/components/schemas/ProductStatus' }
+        - $ref: '#/components/schemas/PriceFields'
+        - $ref: '#/components/schemas/TimingFields'
+    ProductDetail:
+      allOf:
+        - type: object
+          properties:
+            id: { type: integer }
+            numero_lot: { type: string }
+            nom: { type: string }
+            categorie: { type: string, nullable: true }
+            description_1: { type: string, nullable: true }
+            description_2: { type: string, nullable: true }
+            description_3: { type: string, nullable: true }
+            taille_diametre: { type: string, nullable: true }
+            taille_circonference: { type: string, nullable: true }
+            taille_hauteur: { type: string, nullable: true }
+            pas_enchere: { type: string }
+            statut: { $ref: '#/components/schemas/ProductStatus' }
+            peut_encherir: { type: boolean, description: Faux pour un membre général ou un lot fermé }
+            est_meilleur_encherisseur: { type: boolean }
+            mon_plafond:
+              type: object
+              description: Présent seulement si le membre a un proxy bid sur ce lot.
+              properties:
+                plafond: { type: string }
+                est_actif: { type: boolean }
+            medias:
+              type: array
+              description: 'Ordre : photo 1, P2, P3, P4, V1.'
+              items: { $ref: '#/components/schemas/Media' }
+        - $ref: '#/components/schemas/PriceFields'
+        - $ref: '#/components/schemas/TimingFields'
+    ProductSold:
+      type: object
+      description: |
+        Lot vendu (adjugé ou acheté) non soldé : seuls le numéro et la mention SOLD sont publics.
+        `montant` n'est renvoyé qu'à l'adjudicataire, à son parrain et à l'administrateur.
+      properties:
+        id: { type: integer }
+        numero_lot: { type: string }
+        etat: { type: string, enum: [SOLD] }
+        montant: { type: string, example: '420.00' }
+    AuctionSession:
+      type: object
+      properties:
+        id: { type: integer }
+        titre: { type: string, nullable: true }
+        debut_le: { type: string, format: date-time }
+        cloture_le: { type: string, format: date-time }
+        cloture_le_kst: { type: string, example: '2026-11-24 21:00' }
+        statut: { $ref: '#/components/schemas/AuctionSessionStatus' }
+    Bid:
+      type: object
+      properties:
+        id: { type: integer }
+        membre: { type: string, description: Identifiant de l'enchérisseur (si chargé) }
+        montant: { type: string, example: '150.00' }
+        pas_enchere: { type: string }
+        origine: { $ref: '#/components/schemas/BidSource' }
+        a_prolonge: { type: boolean }
+        created_at: { type: string, format: date-time }
+    Achat:
+      type: object
+      properties:
+        produit_id: { type: integer }
+        prix: { type: string, example: '500.00' }
+        acheteur: { type: string, nullable: true }
+        achete_le: { type: string, format: date-time, nullable: true }
+    Media:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { $ref: '#/components/schemas/MediaType' }
+        position: { type: integer }
+        vue:
+          allOf: [{ $ref: '#/components/schemas/PhotoView' }]
+          type: string
+          nullable: true
+        url: { type: string, format: uri }
+        duree_secondes: { type: integer, nullable: true }
+        est_vitrine: { type: boolean }
+    ProductOwner:
+      type: object
+      properties:
+        id: { type: integer }
+        nom: { type: string }
+        pays: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+
+    # Messages
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        type: { $ref: '#/components/schemas/MessageType' }
+        expediteur: { type: string, description: Identifiant (si chargé) }
+        destinataire: { type: string, description: Identifiant (si chargé) }
+        memo: { type: string }
+        envoye_le: { type: string, format: date-time }
+        lu_le: { type: string, format: date-time, nullable: true }

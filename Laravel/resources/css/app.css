@@ -1,0 +1,60 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+@source '../../app/**/*.php';
+
+@theme {
+    --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --color-brand-50: oklch(0.97 0.02 150);
+    --color-brand-100: oklch(0.94 0.04 150);
+    --color-brand-600: oklch(0.52 0.12 150);
+    --color-brand-700: oklch(0.45 0.11 150);
+    --color-brand-900: oklch(0.28 0.06 150);
+}
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition
+            bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-50;
+    }
+    .btn-secondary {
+        @apply inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition
+            border border-stone-300 bg-white text-stone-700 hover:bg-stone-50;
+    }
+    .btn-danger {
+        @apply inline-flex items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium transition
+            bg-red-600 text-white hover:bg-red-700;
+    }
+    .input {
+        @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900
+            focus:border-brand-600 focus:ring-2 focus:ring-brand-100 focus:outline-none;
+    }
+    .label {
+        @apply mb-1 block text-xs font-medium tracking-wide text-stone-500 uppercase;
+    }
+    .table {
+        @apply w-full text-left text-sm;
+    }
+    .table th {
+        @apply border-b border-stone-200 px-3 py-2 text-xs font-medium tracking-wide text-stone-500 uppercase;
+    }
+    .table td {
+        @apply border-b border-stone-100 px-3 py-2.5 align-top text-stone-700;
+    }
+    .table tbody tr:hover td {
+        @apply bg-stone-50;
+    }
+    .link {
+        @apply font-medium text-brand-700 hover:underline;
+    }
+}
+
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 12mm;
+    }
+}
