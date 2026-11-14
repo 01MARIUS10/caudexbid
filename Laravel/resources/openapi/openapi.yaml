@@ -98,7 +98,7 @@ paths:
                         type: object
                         properties:
                           site: { type: string, example: www.caudexbid.com }
-                          email: { type: string, format: email, example: contact@caudexbid.com }
+                          email: { type: string, format: email, example: ndwell@gmail.com }
 
   # ───────────────────────────── Auth ─────────────────────────────
   /auth/register:

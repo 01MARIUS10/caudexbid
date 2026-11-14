@@ -11,7 +11,7 @@ return [
     // Informations sur l'exploitant : nom du site + e-mail uniquement (pas de téléphone).
     'exploitant' => [
         'site' => env('CAUDEXBID_SITE', 'www.caudexbid.com'),
-        'email' => env('CAUDEXBID_EMAIL', 'contact@caudexbid.com'),
+        'email' => env('CAUDEXBID_EMAIL', 'ndwell@gmail.com'),
     ],
 
     // Documentation Swagger de l'API sur /docs (mettre API_DOCS_ENABLED=false pour la masquer).

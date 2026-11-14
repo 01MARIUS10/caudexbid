@@ -8,6 +8,7 @@
 
 @theme {
     --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Fraunces', 'Hiragino Mincho ProN', 'Noto Serif CJK JP', 'Songti SC', 'Nanum Myeongjo', Georgia, serif;
     --color-brand-50: oklch(0.97 0.02 150);
     --color-brand-100: oklch(0.94 0.04 150);
     --color-brand-600: oklch(0.52 0.12 150);
@@ -49,6 +50,38 @@
     }
     .link {
         @apply font-medium text-brand-700 hover:underline;
+    }
+}
+
+/* Bandeau défilant de la page d'accueil : le contenu est dupliqué, on translate de la moitié. */
+.marquee {
+    overflow: hidden;
+    mask-image: linear-gradient(to right, transparent, #000 2.5rem, #000 calc(100% - 2.5rem), transparent);
+}
+.marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 25s linear infinite;
+}
+.marquee:hover .marquee-track {
+    animation-play-state: paused;
+}
+@keyframes marquee {
+    to {
+        transform: translateX(-50%);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+        width: auto;
+        animation: none;
+    }
+    .marquee-track > [aria-hidden] {
+        display: none;
+    }
+    .marquee-track > span {
+        flex-wrap: wrap;
+        row-gap: 0.25rem;
     }
 }
 
