@@ -13,6 +13,8 @@ final class CreateProductValidation
         return [
             'session_enchere_id' => ['required', 'integer', 'exists:product_auction_sessions,id'],
             'proprietaire_id' => ['required', 'integer', 'exists:product_owners,id'],
+            // Plante de la collection (facultative) : classement et statistiques.
+            'plante_id' => ['nullable', 'integer', 'exists:product_plants,id'],
             'categorie' => ['nullable', 'string', 'max:50'],
             'numero_lot' => ['required', 'string', 'max:20', 'unique:products,numero_lot'],
             'nom' => ['required', 'string', 'max:150'],

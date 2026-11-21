@@ -7,6 +7,7 @@ use App\Modules\Product\Models\Enums\ProductStatus;
 use App\Modules\Product\Models\Product;
 use App\Modules\Product\Models\ProductAuctionSession;
 use App\Modules\Product\Models\ProductOwner;
+use App\Modules\Product\_ProductPlant\Models\ProductPlant;
 use App\Modules\Product\_ProductAchat\Models\ProductAchat;
 use App\Modules\User\_UserAuth\Models\UserAuth;
 use Illuminate\Database\Seeder;
@@ -50,9 +51,13 @@ class ProductSeeder extends Seeder
     {
         [$nom, $desc1, $diam, $circ, $haut, $existant, $depart, $pas, $achat] = $plant;
 
+        // Plante de la collection (information générale), puis le lot avec ses propres valeurs.
+        $plante = ProductPlant::firstOrCreate(['nom' => $nom], ['genre' => strtok($nom, ' ')]);
+
         $product = Product::create([
             'session_enchere_id' => $session->id,
             'proprietaire_id' => $ownerId,
+            'plante_id' => $plante->id,
             'categorie' => 'plant',
             'numero_lot' => $lot,
             'nom' => $nom,

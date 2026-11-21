@@ -115,8 +115,11 @@
                 {{-- Photo 1 et résumé de chaque lot. --}}
                 @if ($products)
                     <ul class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:gap-4 xl:grid-cols-4">
+                        {{-- $bubble : rang parmi les cartes à cactus (hors SOLD), pour le petit mot de la bulle. --}}
+                        @php($bubble = 0)
                         @foreach ($products as $product)
-                            <li class="flex"><x-site.product-card :product="$product" class="w-full" /></li>
+                            <li class="flex"><x-site.product-card :product="$product" :index="$bubble" class="w-full" /></li>
+                            @php($bubble += ($product['etat'] ?? null) === 'SOLD' ? 0 : 1)
                         @endforeach
                     </ul>
                 @else

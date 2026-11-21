@@ -26,6 +26,16 @@ return [
         'closing' => '마감 :date KST',
         'bidders' => '입찰자 수',
         'sold' => '판매 완료',
+        'secret_sr' => '카드에는 가격이 표시되지 않습니다',
+        'shh' => [
+            // Petits mots de la bulle du cactus : un par carte, dans l'ordre, la liste se répète.
+            '쉿!',
+            '비밀!',
+            '미스터리!',
+            '맞혀 봐!',
+            '보면 안 돼!',
+            '몰래!',
+        ],
         'awarded' => '낙찰가',
     ],
     'lots' => ':n개 상품',

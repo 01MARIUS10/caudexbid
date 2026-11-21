@@ -75,7 +75,8 @@ class HomeController extends Controller
     {
         $request->session()->put('locale', $locale);
 
-        return redirect()->route('site.home');
+        // Retour à la page d'origine (site ou back office), l'accueil à défaut.
+        return redirect()->back(fallback: route('site.home'));
     }
 
     /** Bandeau défilant : date de clôture / temps restant / date de la prochaine enchère. */

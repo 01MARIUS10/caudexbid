@@ -26,6 +26,16 @@ return [
         'closing' => '截止 :date KST',
         'bidders' => '出价人数',
         'sold' => '已售出',
+        'secret_sr' => '卡片上不显示价格',
+        'shh' => [
+            // Petits mots de la bulle du cactus : un par carte, dans l'ordre, la liste se répète.
+            '嘘！',
+            '保密！',
+            '神秘！',
+            '猜猜看！',
+            '不许偷看！',
+            '秘密！',
+        ],
         'awarded' => '成交价',
     ],
     'lots' => ':n 件拍品',

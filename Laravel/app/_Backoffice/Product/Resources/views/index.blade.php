@@ -6,6 +6,8 @@
                 :options="collect($sessions->toArray())->mapWithKeys(fn ($s) => [$s['id'] => $s['titre']])" />
             <x-bo.select name="statut" label="Statut" :value="request('statut')" placeholder="Tous"
                 :options="collect($statuts)->mapWithKeys(fn ($s) => [$s->value => $s->value])" />
+            <x-bo.select name="plante" label="Plante" :value="request('plante')" placeholder="Toutes"
+                :options="collect($plants->toArray())->mapWithKeys(fn ($p) => [$p['id'] => $p['nom']])" />
             <button class="btn-secondary">Filtrer</button>
         </form>
         <a href="{{ route('bo.products.create') }}" class="btn">Nouveau lot</a>

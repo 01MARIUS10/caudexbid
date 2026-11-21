@@ -26,6 +26,16 @@ return [
         'closing' => '終了 :date KST',
         'bidders' => '入札者数',
         'sold' => '落札済み',
+        'secret_sr' => 'カードには価格を表示しません',
+        'shh' => [
+            // Petits mots de la bulle du cactus : un par carte, dans l'ordre, la liste se répète.
+            'しーっ！',
+            'ないしょ！',
+            'ナゾ！',
+            '当ててみて！',
+            '見ちゃダメ！',
+            'ヒミツ！',
+        ],
         'awarded' => '落札価格',
     ],
     'lots' => ':n ロット',

@@ -7,6 +7,7 @@ use App\Modules\Product\_ProductAchat\Models\ProductAchat;
 use App\Modules\Product\_ProductBid\Models\ProductBid;
 use App\Modules\Product\_ProductBid\Models\ProductProxyPlafondBid;
 use App\Modules\Product\_ProductMedia\Models\ProductMedia;
+use App\Modules\Product\_ProductPlant\Models\ProductPlant;
 use App\Shared\Support\Money;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
@@ -39,6 +40,7 @@ class Product extends Model
     protected $fillable = [
         'session_enchere_id',
         'proprietaire_id',
+        'plante_id',
         'categorie',
         'numero_lot',
         'nom',
@@ -83,6 +85,12 @@ class Product extends Model
     public function session(): BelongsTo
     {
         return $this->belongsTo(ProductAuctionSession::class, 'session_enchere_id');
+    }
+
+    /** Plante du catalogue mise en vente dans ce lot (ses informations sont recopiées dans le lot). */
+    public function plante(): BelongsTo
+    {
+        return $this->belongsTo(ProductPlant::class, 'plante_id');
     }
 
     public function proprietaire(): BelongsTo

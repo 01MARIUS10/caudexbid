@@ -23,7 +23,7 @@ class AppServiceProvider extends ServiceProvider
         // @kst($date) : affiche une date en heure coréenne (fuseau d'affichage du site).
         Blade::directive('kst', fn (string $expr) => "<?php echo e(($expr)?->copy()->tz(config('caudexbid.display_timezone'))->format('Y-m-d H:i') ?? '—'); ?>");
 
-        // @money($montant) : montant formaté, tiret si vide.
-        Blade::directive('money', fn (string $expr) => "<?php echo e(($expr) === null ? '—' : number_format((float) ($expr), 2, '.', ' ')); ?>");
+        // @money($montant) : prix formaté en dollars (« 1 250 $ »), tiret si vide. Voir Money::format().
+        Blade::directive('money', fn (string $expr) => "<?php echo e(\\App\\Shared\\Support\\Money::format($expr)); ?>");
     }
 }

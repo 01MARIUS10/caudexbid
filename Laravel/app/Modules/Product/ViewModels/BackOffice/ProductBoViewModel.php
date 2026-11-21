@@ -41,6 +41,8 @@ class ProductBoViewModel extends ViewModel
             'est_vente_non_reglee' => $this->statut->isUnsettledSale(),
             'session' => $this->session?->titre,
             'proprietaire' => $this->relationLoaded('proprietaire') ? $this->proprietaire?->nom : null,
+            'plante_id' => $this->plante_id,
+            'plante' => $this->relationLoaded('plante') ? $this->plante?->nom : null,
             'prix_depart' => $this->prix_depart,
             'pas_enchere' => $this->pas_enchere,
             'prix_vente_existant' => $this->prix_vente_existant,

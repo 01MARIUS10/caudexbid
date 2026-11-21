@@ -23,6 +23,47 @@ class ProductMediaRepository
             ->first();
     }
 
+    /**
+     * Photo d'un produit lié à la plante, pour compléter l'image de la plante (commande plants:fill-images) :
+     * photo 1 (face) en priorité, sinon la première photo ; produit le plus récent d'abord.
+     */
+    public function firstPhotoOfPlant(int $planteId): ?ProductMedia
+    {
+        return ProductMedia::query()
+            ->select('product_media.*')
+            ->join('products', 'products.id', '=', 'product_media.produit_id')
+            ->where('products.plante_id', $planteId)
+            ->where('product_media.type', MediaType::Photo)
+            ->orderBy('product_media.position')
+            ->orderByDesc('products.id')
+            ->first();
+    }
+
+    /**
+     * Copie un média (fichier compris) vers un autre produit : le nouveau lot a ses propres fichiers,
+     * indépendants de ceux de l'ancien lot (supprimés à son règlement). Jamais en vitrine par défaut.
+     */
+    public function copyTo(ProductMedia $source, int $produitId): ?ProductMedia
+    {
+        $disk = Storage::disk(config('caudexbid.media.disk'));
+        if (! $disk->exists($source->chemin)) {
+            return null;
+        }
+
+        $target = 'products/'.$produitId.'/'.\Illuminate\Support\Str::random(40).'.'.pathinfo($source->chemin, PATHINFO_EXTENSION);
+        $disk->copy($source->chemin, $target);
+
+        return $this->create([
+            'produit_id' => $produitId,
+            'type' => $source->type,
+            'position' => $source->position,
+            'vue' => $source->vue,
+            'chemin' => $target,
+            'duree_secondes' => $source->duree_secondes,
+            'est_vitrine' => false,
+        ]);
+    }
+
     public function create(array $attributes): ProductMedia
     {
         return ProductMedia::create($attributes);

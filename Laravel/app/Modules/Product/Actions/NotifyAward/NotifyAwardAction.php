@@ -7,6 +7,7 @@ use App\Modules\Message\Actions\SendSystemMessage\SendSystemMessageInput;
 use App\Modules\Product\Repository\ProductRepository;
 use App\Modules\User\_UserAuth\Actions\ListMembers\ListMembersAction;
 use App\Modules\User\_UserAuth\Actions\ListMembers\ListMembersInput;
+use App\Shared\Support\Money;
 
 /**
  * Notification d'adjudication : envoyée à l'adjudicataire et au membre premium, son parrain.
@@ -32,7 +33,7 @@ final class NotifyAwardAction
         }
 
         $winner = $this->listMembers->execute(new ListMembersInput(ids: [$winnerId]))->first();
-        $prix = $product->prixAdjudication();
+        $prix = Money::format($product->prixAdjudication());
 
         $this->sendSystemMessage->execute(new SendSystemMessageInput($winnerId, sprintf(
             'Félicitations : le lot %s (%s) vous est adjugé pour %s.',

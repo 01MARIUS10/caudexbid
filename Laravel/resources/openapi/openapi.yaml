@@ -1077,6 +1077,7 @@ components:
       properties:
         session_enchere_id: { type: integer }
         proprietaire_id: { type: integer }
+        plante_id: { type: integer, nullable: true, description: Plante de la collection (product_plants) — classement et statistiques }
         categorie: { type: string, maxLength: 50, nullable: true }
         numero_lot: { type: string, maxLength: 20, description: Unique, example: L-001 }
         nom: { type: string, maxLength: 150 }

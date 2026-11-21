@@ -43,12 +43,13 @@ class ProductRepository
         $product->delete();
     }
 
-    /** Liste paginée (back office). Filtres : session, statut, recherche lot / nom. */
-    public function search(?int $sessionId = null, ?ProductStatus $statut = null, ?string $q = null, int $perPage = 25): LengthAwarePaginator
+    /** Liste paginée (back office). Filtres : session, statut, recherche lot / nom, plante de la collection. */
+    public function search(?int $sessionId = null, ?ProductStatus $statut = null, ?string $q = null, int $perPage = 25, ?int $planteId = null): LengthAwarePaginator
     {
         return Product::with(self::DISPLAY_RELATIONS)
             ->when($sessionId, fn (Builder $b) => $b->where('session_enchere_id', $sessionId))
             ->when($statut, fn (Builder $b) => $b->where('statut', $statut))
+            ->when($planteId, fn (Builder $b) => $b->where('plante_id', $planteId))
             ->when($q, fn (Builder $b) => $b->where(fn (Builder $w) => $w
                 ->where('numero_lot', 'like', "%{$q}%")
                 ->orWhere('nom', 'like', "%{$q}%")))
@@ -76,6 +77,35 @@ class ProductRepository
             ->orderByDesc('session_enchere_id')
             ->orderBy('numero_lot')
             ->get();
+    }
+
+    /**
+     * Lots d'une session à remettre en vente (commande auctions:relist), médias et achat immédiat chargés.
+     *
+     * @param  list<ProductStatus>  $statuses
+     */
+    public function toRelist(int $sessionId, array $statuses): Collection
+    {
+        return Product::with(['media', 'achat'])
+            ->where('session_enchere_id', $sessionId)
+            ->whereIn('statut', $statuses)
+            ->orderBy('numero_lot')
+            ->get();
+    }
+
+    /** Le lot existe-t-il déjà dans la session (même nom, même propriétaire) ? Évite de remettre deux fois le même lot. */
+    public function existsInSession(int $sessionId, string $nom, int $proprietaireId): bool
+    {
+        return Product::where('session_enchere_id', $sessionId)
+            ->where('nom', $nom)
+            ->where('proprietaire_id', $proprietaireId)
+            ->exists();
+    }
+
+    /** @return list<string> numéros de lot commençant par le préfixe (ex. « 2612- ») */
+    public function lotNumbersWithPrefix(string $prefix): array
+    {
+        return Product::where('numero_lot', 'like', $prefix.'%')->pluck('numero_lot')->all();
     }
 
     /** Lots publiés d'une session (« Enchères de cette session »). */

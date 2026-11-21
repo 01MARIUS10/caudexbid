@@ -25,6 +25,7 @@
             ['label' => 'Historique des enchères', 'route' => 'bo.bids.index', 'active' => 'bo.bids.*'],
         ]],
         ['label' => 'Lots & plantes', 'icon' => 'leaf', 'items' => [
+            ['label' => 'Liste des plantes', 'route' => 'bo.plants.index', 'active' => 'bo.plants.*'],
             ['label' => 'Lots en vente', 'route' => 'bo.products.index', 'active' => 'bo.products.*'],
             ['label' => 'Propriétaires des plantes', 'route' => 'bo.owners.index', 'active' => 'bo.owners.*'],
         ]],
@@ -84,6 +85,7 @@
                 @endif
             @endforeach
         </nav>
+        <x-site.locale-switch class="px-3 pb-3" />
         <form method="POST" action="{{ route('bo.auctions.close') }}" class="px-3 pb-2">
             @csrf
             <button class="w-full rounded-lg border border-dashed border-stone-300 px-3 py-2 text-xs text-stone-500 hover:border-brand-600 hover:text-brand-700">

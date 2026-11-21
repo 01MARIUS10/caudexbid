@@ -26,6 +26,16 @@ return [
         'closing' => 'Clôture : :date KST',
         'bidders' => 'Enchérisseurs',
         'sold' => 'Vendu',
+        'secret_sr' => 'Prix non affiché sur la carte',
+        'shh' => [
+            // Petits mots de la bulle du cactus : un par carte, dans l'ordre, la liste se répète.
+            'Chut !',
+            'Motus !',
+            'Mystère !',
+            'Devine !',
+            'Pas touche !',
+            'Secret !',
+        ],
         'awarded' => 'Prix d\'adjudication',
     ],
     'lots' => '{1} :n lot|[2,*] :n lots',

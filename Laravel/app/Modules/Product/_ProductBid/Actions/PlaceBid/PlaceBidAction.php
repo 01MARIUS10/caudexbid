@@ -52,10 +52,10 @@ final class PlaceBidAction
             $montant = Money::toCents($input->montant);
 
             if ($montant < $minimum) {
-                throw new BusinessRuleException('Le montant doit être au moins de '.Money::fromCents($minimum).'.');
+                throw new BusinessRuleException('Le montant doit être au moins de '.Money::format(Money::fromCents($minimum)).'.');
             }
             if (($montant - $minimum) % $pas !== 0) {
-                throw new BusinessRuleException('Le montant doit suivre le pas d\'enchère ('.$product->pas_enchere.').');
+                throw new BusinessRuleException('Le montant doit suivre le pas d\'enchère ('.Money::format($product->pas_enchere).').');
             }
 
             $proxy = $input->proxy ? $this->bids->saveProxy($product->id, $membreId, $input->plafond) : null;

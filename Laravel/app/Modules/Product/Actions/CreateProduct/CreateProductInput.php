@@ -15,7 +15,7 @@ final readonly class CreateProductInput
     public static function fromArray(array $data): self
     {
         $attributes = collect($data)->only([
-            'proprietaire_id', 'categorie', 'numero_lot', 'nom',
+            'proprietaire_id', 'plante_id', 'categorie', 'numero_lot', 'nom',
             'description_1', 'description_2', 'description_3',
             'taille_diametre', 'taille_circonference', 'taille_hauteur',
             'prix_vente_existant', 'prix_depart', 'pas_enchere',

@@ -26,6 +26,16 @@ return [
         'closing' => 'Closes :date KST',
         'bidders' => 'Bidders',
         'sold' => 'Sold',
+        'secret_sr' => 'Price not shown on the card',
+        'shh' => [
+            // Petits mots de la bulle du cactus : un par carte, dans l'ordre, la liste se répète.
+            'Shh!',
+            'Hush!',
+            'Mystery!',
+            'Guess!',
+            'No peeking!',
+            'Secret!',
+        ],
         'awarded' => 'Winning price',
     ],
     'lots' => '{1} :n lot|[2,*] :n lots',

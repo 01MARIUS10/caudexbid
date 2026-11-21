@@ -5,7 +5,6 @@ namespace App\_Backoffice\Product;
 use App\Modules\User\_UserAuth\ViewModels\BackOffice\MemberBoViewModel;
 use App\_Backoffice\Product\ViewModels\ProductProxyBoViewModel;
 use App\Modules\Product\_ProductBid\ViewModels\BackOffice\ProductBidBoViewModel;
-use App\Modules\Product\ViewModels\BackOffice\ProductOwnerBoViewModel;
 use App\Modules\Product\ViewModels\BackOffice\ProductAuctionSessionBoViewModel;
 use App\Modules\Product\ViewModels\BackOffice\ProductBoViewModel;
 use App\Http\Controllers\Controller;
@@ -20,7 +19,10 @@ use App\Modules\Product\Models\Enums\ProductStatus;
 use App\Modules\Product\_ProductBid\Repository\ProductBidRepository;
 use App\Modules\Product\Repository\DocumentRepository;
 use App\Modules\Product\Repository\ProductAuctionSessionRepository;
+use App\Modules\Product\_ProductPlant\Repository\ProductPlantRepository;
 use App\Modules\Product\Repository\ProductOwnerRepository;
+use App\Modules\Product\ViewModels\BackOffice\ProductOwnerBoViewModel;
+use App\Modules\Product\_ProductPlant\ViewModels\BackOffice\ProductPlantBoViewModel;
 use App\Modules\Product\Repository\ProductRepository;
 use App\Modules\User\_UserAuth\Repository\UserAuthRepository;
 use Illuminate\Http\RedirectResponse;
@@ -34,12 +36,13 @@ use Illuminate\View\View;
  */
 class ProductController extends Controller
 {
-    public function index(Request $request, ProductRepository $products, ProductAuctionSessionRepository $sessions, ListMembersAction $members): View
+    public function index(Request $request, ProductRepository $products, ProductAuctionSessionRepository $sessions, ProductPlantRepository $plants, ListMembersAction $members): View
     {
         $page = $products->search(
             $request->integer('session') ?: null,
             ProductStatus::tryFrom((string) $request->query('statut')),
             $request->query('q'),
+            planteId: $request->integer('plante') ?: null,
         );
         $directory = MemberDirectory::load($members, collect($page->items())->flatMap(fn ($p) => [$p->auteur_prix_actuel_id, $p->achat?->acheteur_id]));
 
@@ -47,14 +50,18 @@ class ProductController extends Controller
             'products' => ProductBoViewModel::collection($page, fn ($p) => new ProductBoViewModel($p, $directory)),
             'sessions' => ProductAuctionSessionBoViewModel::collection($sessions->all()),
             'statuts' => ProductStatus::cases(),
+            'plants' => ProductPlantBoViewModel::collection($plants->all()),
         ]);
     }
 
-    public function create(ProductAuctionSessionRepository $sessions, ProductOwnerRepository $owners): View
+    /** Nouveau lot. Plante de la collection facultative : elle pré-remplit le nom et les descriptions. */
+    public function create(Request $request, ProductAuctionSessionRepository $sessions, ProductOwnerRepository $owners, ProductPlantRepository $plants): View
     {
         return view('product::create', [
             'sessions' => ProductAuctionSessionBoViewModel::collection($sessions->all()->whereIn('statut', [AuctionSessionStatus::Scheduled, AuctionSessionStatus::Open])->values()),
             'owners' => ProductOwnerBoViewModel::collection($owners->all()),
+            'plants' => ProductPlantBoViewModel::collection($plants->all()),
+            'selected' => $request->integer('plante') ?: null,
         ]);
     }
 
@@ -76,7 +83,7 @@ class ProductController extends Controller
         ListMembersAction $members,
     ): View {
         $model = $products->find($product) ?? abort(404);
-        $model->load('proprietaire');
+        $model->load('proprietaire', 'plante');
         $winnerId = $model->adjudicataireId();
         $history = $bids->history($model->id);
         $proxies = $bids->proxiesOf($model->id);

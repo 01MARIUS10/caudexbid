@@ -36,6 +36,15 @@ class ProductAuctionSessionRepository
             ?? $this->next(now());
     }
 
+    /** Session précédente (début antérieur) qui contient des lots : source par défaut de auctions:relist. */
+    public function previousWithProducts(ProductAuctionSession $session): ?ProductAuctionSession
+    {
+        return ProductAuctionSession::where('debut_le', '<', $session->debut_le)
+            ->whereHas('products')
+            ->orderByDesc('debut_le')
+            ->first();
+    }
+
     /** Prochaine enchère (bandeau défilant). */
     public function next(CarbonInterface $now): ?ProductAuctionSession
     {

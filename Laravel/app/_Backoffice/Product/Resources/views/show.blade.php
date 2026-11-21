@@ -4,7 +4,7 @@
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
             <p class="text-xl font-semibold text-stone-900">{{ $p['nom'] }} <x-bo.status :status="$p['statut']" /></p>
-            <p class="text-sm text-stone-500">{{ $p['session'] }} · propriétaire : {{ $p['proprietaire'] }} · catégorie : {{ $p['categorie'] }}</p>
+            <p class="text-sm text-stone-500">{{ $p['session'] }} · propriétaire : {{ $p['proprietaire'] }} · catégorie : {{ $p['categorie'] }}@if ($p['plante']) · plante : <a class="link" href="{{ route('bo.plants.index', ['q' => $p['plante']]) }}">{{ $p['plante'] }}</a>@endif</p>
         </div>
         @if ($p['est_vente_non_reglee'])
             <form method="POST" action="{{ route('bo.products.settle', $p['id']) }}" onsubmit="return confirm('Confirmer le règlement ? Le lot, ses médias et ses enchères seront supprimés.')">
@@ -45,7 +45,7 @@
             @if (in_array($p['statut'], ['draft', 'active'], true) && ! ($p['achat']['est_achete'] ?? false))
                 <form method="POST" action="{{ route('bo.products.achat.define', $p['id']) }}" class="mt-4 flex items-end gap-2">
                     @csrf @method('PUT')
-                    <x-bo.field name="prix" label="{{ $p['achat'] ? 'Modifier le prix' : 'Définir un prix' }}" type="number" step="0.01" :value="$p['achat']['prix'] ?? null" class="flex-1" />
+                    <x-bo.field name="prix" label="{{ $p['achat'] ? 'Modifier le prix ($)' : 'Définir un prix ($)' }}" type="number" step="0.01" :value="$p['achat']['prix'] ?? null" class="flex-1" />
                     <button class="btn">OK</button>
                 </form>
             @endif

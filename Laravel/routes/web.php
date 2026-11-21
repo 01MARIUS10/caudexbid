@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Route;
 | _Api         API JSON (/api) : middleware « api » (sans session ni CSRF) à la place du groupe « web »
 */
 Route::name('site.')->group(app_path('_Site/route.php'));
-Route::prefix('backoffice')->name('bo.')->group(app_path('_Backoffice/route.php'));
+Route::prefix('backoffice')->name('bo.')->middleware(\App\Middleware\SetLocale::ALIAS)->group(app_path('_Backoffice/route.php'));
 Route::prefix('api')->name('api.')->middleware('api')->withoutMiddleware('web')->group(app_path('_Api/route.php'));
 
 /*
