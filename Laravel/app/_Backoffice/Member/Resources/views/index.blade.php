@@ -1,4 +1,4 @@
-<x-bo.layout title="Membres">
+<x-bo.layout title="Liste des membres">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <form class="flex flex-wrap items-end gap-3">
             <x-bo.field name="q" label="Recherche" :value="request('q')" placeholder="Identifiant, e-mail, nom" />

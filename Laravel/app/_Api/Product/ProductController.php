@@ -7,7 +7,7 @@ use App\Modules\Product\Actions\CreateProduct\CreateProductAction;
 use App\Modules\Product\Actions\CreateProduct\CreateProductValidation;
 use App\Modules\Product\Actions\SettleProduct\SettleProductAction;
 use App\Modules\Product\Actions\SettleProduct\SettleProductValidation;
-use App\_Api\Product\ViewModels\ProductCardViewModel;
+use App\Modules\Product\ViewModels\ProductCardViewModel;
 use App\Modules\Product\ViewModels\ProductDetailViewModel;
 use App\Modules\Product\Repository\ProductAuctionSessionRepository;
 use App\Modules\Product\Repository\ProductRepository;

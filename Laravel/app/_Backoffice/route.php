@@ -7,7 +7,6 @@
 | Regroupe les routes de chaque dossier ({Route}/routes.php).
 */
 require __DIR__.'/Achat/routes.php';
-require __DIR__.'/Auth/routes.php';
 require __DIR__.'/Bid/routes.php';
 require __DIR__.'/Dashboard/routes.php';
 require __DIR__.'/Document/routes.php';

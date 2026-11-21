@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 | Les trois points d'entrée : un dossier de routes chacun
 |--------------------------------------------------------------------------
-| _Site        site public (visiteurs non authentifiés)
+| _Site        site public + connexion commune (/login, /logout)
 | _Backoffice  back office (/backoffice, noms « bo. »)
 | _Api         API JSON (/api) : middleware « api » (sans session ni CSRF) à la place du groupe « web »
 */

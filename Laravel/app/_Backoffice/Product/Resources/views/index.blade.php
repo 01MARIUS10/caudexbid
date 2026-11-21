@@ -1,4 +1,4 @@
-<x-bo.layout title="Produits">
+<x-bo.layout title="Lots en vente">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <form class="flex flex-wrap items-end gap-3">
             <x-bo.field name="q" label="Recherche" :value="request('q')" placeholder="Lot ou nom" />

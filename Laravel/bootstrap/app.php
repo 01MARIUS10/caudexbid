@@ -15,8 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // L'alias « grade » est enregistré par ModuleServiceProvider depuis app/Middleware/EnsureGrade.
         // Chaque route déclare elle-même sa combinaison de grades : EnsureGrade::for(GradeCode::...).
-        $middleware->redirectGuestsTo(fn () => route('bo.login'));
-        $middleware->redirectUsersTo(fn () => route('bo.dashboard'));
+        $middleware->redirectGuestsTo(fn () => route('site.login'));
+        $middleware->redirectUsersTo(fn () => route('site.home'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // API : JSON. Back office : retour au formulaire avec le message d'erreur.

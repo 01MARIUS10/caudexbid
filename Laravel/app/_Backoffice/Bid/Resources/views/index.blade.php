@@ -1,4 +1,4 @@
-<x-bo.layout title="Enchères">
+<x-bo.layout title="Historique des enchères">
     <form class="flex flex-wrap items-end gap-3">
         <x-bo.select name="session" label="Session" :value="request('session')" placeholder="Toutes"
             :options="collect($sessions->toArray())->mapWithKeys(fn ($s) => [$s['id'] => $s['titre']])" />

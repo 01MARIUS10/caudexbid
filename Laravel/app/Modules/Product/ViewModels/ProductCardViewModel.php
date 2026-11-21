@@ -1,6 +1,6 @@
 <?php
 
-namespace App\_Api\Product\ViewModels;
+namespace App\Modules\Product\ViewModels;
 
 use App\Modules\Product\Models\Product;
 use App\Modules\Product\ViewModels\Concerns\ProductVisibility;

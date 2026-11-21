@@ -1,4 +1,4 @@
-<x-bo.layout title="Messages">
+<x-bo.layout title="Messagerie">
     <div class="flex flex-wrap items-end justify-between gap-3">
         <form class="flex flex-wrap items-end gap-3">
             <x-bo.select name="type" label="Type" :value="request('type')" placeholder="Tous"

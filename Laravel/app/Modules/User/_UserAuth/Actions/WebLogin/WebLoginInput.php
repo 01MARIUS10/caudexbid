@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\User\_UserAuth\Actions\BackOfficeLogin;
+namespace App\Modules\User\_UserAuth\Actions\WebLogin;
 
 use Illuminate\Support\Facades\Validator;
 
-final readonly class BackOfficeLoginInput
+final readonly class WebLoginInput
 {
     public function __construct(
         public string $identifiant,

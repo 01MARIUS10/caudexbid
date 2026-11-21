@@ -1,15 +1,19 @@
 <?php
 
-namespace App\_Backoffice\Auth;
+namespace App\_Site\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Modules\User\_UserAuth\Actions\BackOfficeLogin\BackOfficeLoginAction;
-use App\Modules\User\_UserAuth\Actions\BackOfficeLogin\BackOfficeLoginInput;
+use App\Modules\User\_UserAuth\Actions\WebLogin\WebLoginAction;
+use App\Modules\User\_UserAuth\Actions\WebLogin\WebLoginInput;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
+/**
+ * Connexion commune à tous les membres (/login).
+ * Pas de redirection vers le back office : l'administrateur y accède depuis la navigation.
+ */
 class AuthController extends Controller
 {
     public function showLogin(): View
@@ -17,12 +21,12 @@ class AuthController extends Controller
         return view('auth::login');
     }
 
-    public function login(Request $request, BackOfficeLoginAction $action): RedirectResponse
+    public function login(Request $request, WebLoginAction $action): RedirectResponse
     {
-        $action->execute(BackOfficeLoginInput::fromArray($request->all()));
+        $action->execute(WebLoginInput::fromArray($request->all()));
         $request->session()->regenerate();
 
-        return redirect()->intended(route('bo.dashboard'));
+        return redirect()->intended(route('site.home'));
     }
 
     public function logout(Request $request): RedirectResponse
@@ -31,6 +35,6 @@ class AuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('bo.login');
+        return redirect()->route('site.home');
     }
 }

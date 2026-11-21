@@ -1,6 +1,6 @@
-<x-bo.layout title="Sessions d'enchères">
+<x-bo.layout title="Sessions des enchères">
     <div class="grid gap-5 lg:grid-cols-3">
-        <x-bo.card title="Sessions" class="lg:col-span-2">
+        <x-bo.card title="Liste des sessions" class="lg:col-span-2">
             <table class="table">
                 <thead><tr><th>Titre</th><th>Début (KST)</th><th>Clôture (KST)</th><th>Statut</th><th class="text-right">Lots</th></tr></thead>
                 <tbody>

@@ -1,4 +1,4 @@
-<x-bo.layout title="Grades">
+<x-bo.layout title="Barème des grades">
     <x-bo.card title="Barème des grades" subtitle="Le grade actuel d'un membre est sa dernière attribution (table user_grades)">
         <table class="table">
             <thead><tr><th>Code</th><th>Nom</th><th>Niveau</th><th>Peut enchérir</th><th>Peut changer un grade</th><th class="text-right">Membres</th></tr></thead>

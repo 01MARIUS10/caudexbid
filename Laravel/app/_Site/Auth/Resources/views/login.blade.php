@@ -12,11 +12,11 @@
             <span class="flex size-10 items-center justify-center rounded-xl bg-brand-600 font-bold text-white">cb</span>
             <div>
                 <p class="font-semibold text-stone-900">caudexbid</p>
-                <p class="text-sm text-stone-500">Back office</p>
+                <p class="text-sm text-stone-500">Connexion à votre espace</p>
             </div>
         </div>
 
-        <form method="POST" action="{{ route('bo.login.attempt') }}" class="space-y-4 rounded-xl border border-stone-200 bg-white p-6">
+        <form method="POST" action="{{ route('site.login.attempt') }}" class="space-y-4 rounded-xl border border-stone-200 bg-white p-6">
             @csrf
             @if ($errors->has('business'))
                 <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{{ $errors->first('business') }}</div>
